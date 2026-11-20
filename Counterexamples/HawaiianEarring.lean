@@ -70,7 +70,33 @@ lemma H1_inter_Ear : H1 = ⋂ n, Ear n := by
     simp only [Ear_union_H1_closedBall]
     rw [← union_iInter]
     have h1 : ⋂ i, closedBall (p (i + 2)) (r (i + 2)) = {⟨0,0⟩} := by
-      sorry
+      ext x
+      refine ⟨fun f ↦ ?_, fun f ↦ ?_⟩
+      <;> rw [mem_singleton_iff] at *
+      · have h (n : ℕ) : ∀ x ∈ closedBall (p n) (r n), ‖x‖ ≤ 2 / n := by
+          intro y hy
+          have h1 := norm_le_of_mem_closedBall hy
+          simp [p, r] at h1
+          nth_rewrite 2 [Complex.norm_def] at h1
+          simp at h1
+          grw [h1]
+          grind
+        by_cases h1 : ‖x‖ > 0
+        · have ⟨m, hm⟩ := exists_nat_gt (2 / ‖x‖)
+          exfalso
+          specialize h (m + 2)
+          have h2 := h x (mem_iInter.mp f m)
+          have h3 : (m : ℝ) < (m + 2 : ℝ) := by simp
+          have h4 := lt_trans hm h3
+          field_simp at h2 h4
+          simp at h2
+          linarith
+        · simp at h1
+          trivial
+      · rw [mem_iInter]
+        intro i
+        simp [p, r, f]
+        rw [Real.sqrt_sq (by linarith)]
     rw [h1]
     symm
     apply union_eq_self_of_subset_right

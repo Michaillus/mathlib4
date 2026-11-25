@@ -2,7 +2,7 @@ module
 
 import Mathlib
 
-open Metric Set Relation Complex Bornology
+open Metric Set Relation Complex Bornology Real
 
 /-- Subspace definition of Hawaiian Earring -/
 noncomputable def p (n : ℕ) : ℂ := ⟨1 / n, 0⟩
@@ -42,7 +42,7 @@ lemma H1isHausdorff : T2Space H1 := inferInstance
 -- H1 is closed, bounded and compact
 
 noncomputable def Ear (m : ℕ) : Set ℂ :=
-  (⋃ n : Fin (m + 1), sphere (p n) (r n)) ∪ closedBall (p (m + 2)) (r (m + 2))
+  (⋃ n : Fin (m + 1), sphere (p n) (r n)) ∪ closedBall (p (m + 1)) (r (m + 1))
 
 lemma isClosed_Ear (m : ℕ) : IsClosed (Ear m) := by
   refine IsClosed.union ?_ ?_
@@ -63,13 +63,40 @@ lemma isCompact_Ear (m : ℕ) : CompactSpace (Ear m) := by
   exact isCompact_of_isClosed_isBounded (isClosed_Ear m) (isBounded_Ear m)
 
 
-lemma Ear_union_H1_closedBall (m : ℕ) : Ear (m : ℕ) = H1 ∪ closedBall (p (m + 2)) (r (m + 2)) := by
-  sorry
+lemma Ear_union_H1_closedBall (m : ℕ) : Ear m = H1 ∪ closedBall (p (m + 1)) (r (m + 1)) := by
+  unfold Ear H1
+  ext x
+  refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+  · cases h with
+    | inl h1 =>
+      obtain ⟨n, hn⟩ := mem_iUnion.mp h1
+      left
+      rw [Set.mem_iUnion]
+      use n
+    | inr h1 => exact Or.inr h1
+  · cases h with
+    | inl h1 =>
+      obtain ⟨n, hn⟩ := mem_iUnion.mp h1
+      by_cases! h : (n ≥ m + 1)
+      · right
+        have h2 : r n + dist (p n) (p (m + 1)) ≤ r (m + 1) := by
+          unfold r p
+          simp
+          rw [sub_sq_comm, sqrt_sq]
+          · linarith
+          · rw [sub_nonneg]
+            exact inv_anti₀ (by linarith) (by exact_mod_cast h)
+        apply closedBall_subset_closedBall' h2
+        exact sphere_subset_closedBall hn
+      · left
+        rw [Set.mem_iUnion]
+        use Fin.mk n h
+    | inr h1 => exact Or.inr h1
 
 lemma H1_inter_Ear : H1 = ⋂ n, Ear n := by
     simp only [Ear_union_H1_closedBall]
     rw [← union_iInter]
-    have h1 : ⋂ i, closedBall (p (i + 2)) (r (i + 2)) = {⟨0,0⟩} := by
+    have h1 : ⋂ i, closedBall (p (i + 1)) (r (i + 1)) = {⟨0,0⟩} := by
       ext x
       refine ⟨fun f ↦ ?_, fun f ↦ ?_⟩
       <;> rw [mem_singleton_iff] at *
@@ -84,9 +111,9 @@ lemma H1_inter_Ear : H1 = ⋂ n, Ear n := by
         by_cases h1 : ‖x‖ > 0
         · have ⟨m, hm⟩ := exists_nat_gt (2 / ‖x‖)
           exfalso
-          specialize h (m + 2)
+          specialize h (m + 1)
           have h2 := h x (mem_iInter.mp f m)
-          have h3 : (m : ℝ) < (m + 2 : ℝ) := by simp
+          have h3 : (m : ℝ) < (m + 1 : ℝ) := by simp
           have h4 := lt_trans hm h3
           field_simp at h2 h4
           simp at h2
@@ -96,7 +123,7 @@ lemma H1_inter_Ear : H1 = ⋂ n, Ear n := by
       · rw [mem_iInter]
         intro i
         simp [p, r, f]
-        rw [Real.sqrt_sq (by linarith)]
+        rw [.sqrt_sq (by linarith)]
     rw [h1]
     symm
     apply union_eq_self_of_subset_right
